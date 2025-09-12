@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agenda Inteligente</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .datetime {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.1em;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card h2 {
+            margin-bottom: 15px;
+            color: #4a5568;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s ease;
+            width: 100%;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        .event-item, .task-item {
+            background: #f7fafc;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .event-item:hover, .task-item:hover {
+            background: #edf2f7;
+            transform: translateX(5px);
+        }
+
+        .event-time {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 0.9em;
+        }
+
+        .event-title {
+            font-size: 1.1em;
+            margin: 5px 0;
+            color: #2d3748;
+        }
+
+        .event-description {
+            color: #718096;
+            font-size: 0.9em;
+        }
+
+        .delete-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #e53e3e;
+            color: white;
+            border: none;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .priority-high { border-left-color: #e53e3e; }
+        .priority-medium { border-left-color: #ed8936; }
+        .priority-low { border-left-color: #38a169; }
+
+        .completed {
+            opacity: 0.6;
+            text-decoration: line-through;
+        }
+
+        .smart-suggestions {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+
+        .suggestion-item {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #48bb78;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 1000;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+        }
+
+        .notification.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #718096;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .weather-widget {
+            background: linear-gradient(135deg, #74b9ff, #0984e3);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .weather-temp {
+            font-size: 2em;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🗓️ Agenda Inteligente</h1>
+            <div class="datetime" id="currentDateTime"></div>
+        </header>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="totalEvents">0</div>
+                <div class="stat-label">Eventos Hoje</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalTasks">0</div>
+                <div class="stat-label">Tarefas Pendentes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="completedTasks">0</div>
+                <div class="stat-label">Tarefas Concluídas</div>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <div class="card">
+                <h2>➕ Adicionar Evento</h2>
+                <form id="eventForm">
+                    <div class="form-group">
+                        <label for="eventTitle">Título:</label>
+                        <input type="text" id="eventTitle" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="eventDate">Data:</label>
+                        <input type="date" id="eventDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="eventTime">Hora:</label>
+                        <input type="time" id="eventTime" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="eventDescription">Descrição:</label>
+                        <textarea id="eventDescription" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="eventReminder">Lembrete (minutos antes):</label>
+                        <select id="eventReminder">
+                            <option value="5">5 minutos</option>
+                            <option value="15" selected>15 minutos</option>
+                            <option value="30">30 minutos</option>
+                            <option value="60">1 hora</option>
+                        </select>
+                    </div>
+                    <button type="submit">Adicionar Evento</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <h2>✅ Adicionar Tarefa</h2>
+                <form id="taskForm">
+                    <div class="form-group">
+                        <label for="taskTitle">Tarefa:</label>
+                        <input type="text" id="taskTitle" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="taskPriority">Prioridade:</label>
+                        <select id="taskPriority">
+                            <option value="low">Baixa</option>
+                            <option value="medium" selected>Média</option>
+                            <option value="high">Alta</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="taskDue">Data Limite:</label>
+                        <input type="date" id="taskDue">
+                    </div>
+                    <div class="form-group">
+                        <label for="taskCategory">Categoria:</label>
+                        <select id="taskCategory">
+                            <option value="trabalho">Trabalho</option>
+                            <option value="pessoal">Pessoal</option>
+                            <option value="estudos">Estudos</option>
+                            <option value="saude">Saúde</option>
+                            <option value="compras">Compras</option>
+                        </select>
+                    </div>
+                    <button type="submit">Adicionar Tarefa</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <h2>📊 Insights</h2>
+                <div class="weather-widget">
+                    <div>☀️ Clima Hoje</div>
+                    <div class="weather-temp">22°C</div>
+                    <div>Ensolarado</div>
+                </div>
+                <div style="margin-top: 15px;">
+                    <strong>Produtividade:</strong>
+                    <div style="background: #e2e8f0; height: 10px; border-radius: 5px; margin: 5px 0;">
+                        <div id="productivityBar" style="background: #48bb78; height: 100%; border-radius: 5px; width: 75%;"></div>
+                    </div>
+                    <small>75% das tarefas concluídas esta semana</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <div class="card">
+                <h2>📅 Eventos Hoje</h2>
+                <div id="eventsList"></div>
+            </div>
+
+            <div class="card">
+                <h2>📝 Tarefas</h2>
+                <div id="tasksList"></div>
+            </div>
+
+            <div class="card">
+                <h2>🧠 Sugestões Inteligentes</h2>
+                <div id="smartSuggestions"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="notification" class="notification"></div>
+
+    <script>
+        class SmartAgenda {
+            constructor() {
+                this.events = JSON.parse(localStorage.getItem('agenda_events') || '[]');
+                this.tasks = JSON.parse(localStorage.getItem('agenda_tasks') || '[]');
+                this.suggestions = [];
+                this.init();
+            }
+
+            init() {
+                this.updateDateTime();
+                this.setupEventListeners();
+                this.renderEvents();
+                this.renderTasks();
+                this.generateSmartSuggestions();
+                this.updateStats();
+                this.startReminderCheck();
+                setInterval(() => this.updateDateTime(), 1000);
+                setInterval(() => this.generateSmartSuggestions(), 300000); // 5 minutos
+            }
+
+            updateDateTime() {
+                const now = new Date();
+                const options = { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                };
+                document.getElementById('currentDateTime').textContent = 
+                    now.toLocaleDateString('pt-BR', options);
+            }
+
+            setupEventListeners() {
+                document.getElementById('eventForm').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.addEvent();
+                });
+
+                document.getElementById('taskForm').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.addTask();
+                });
+            }
+
+            addEvent() {
+                const event = {
+                    id: Date.now(),
+                    title: document.getElementById('eventTitle').value,
+                    date: document.getElementById('eventDate').value,
+                    time: document.getElementById('eventTime').value,
+                    description: document.getElementById('eventDescription').value,
+                    reminder: parseInt(document.getElementById('eventReminder').value),
+                    createdAt: new Date()
+                };
+
+                this.events.push(event);
+                this.saveEvents();
+                this.renderEvents();
+                this.updateStats();
+                document.getElementById('eventForm').reset();
+                this.showNotification('Evento adicionado com sucesso!');
+            }
+
+            addTask() {
+                const task = {
+                    id: Date.now(),
+                    title: document.getElementById('taskTitle').value,
+                    priority: document.getElementById('taskPriority').value,
+                    due: document.getElementById('taskDue').value,
+                    category: document.getElementById('taskCategory').value,
+                    completed: false,
+                    createdAt: new Date()
+                };
+
+                this.tasks.push(task);
+                this.saveTasks();
+                this.renderTasks();
+                this.updateStats();
+                document.getElementById('taskForm').reset();
+                this.showNotification('Tarefa adicionada com sucesso!');
+            }
+
+            renderEvents() {
+                const today = new Date().toISOString().split('T')[0];
+                const todayEvents = this.events.filter(event => event.date === today)
+                    .sort((a, b) => a.time.localeCompare(b.time));
+
+                const container = document.getElementById('eventsList');
+                container.innerHTML = '';
+
+                if (todayEvents.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: #718096;">Nenhum evento hoje</p>';
+                    return;
+                }
+
+                todayEvents.forEach(event => {
+                    const eventEl = document.createElement('div');
+                    eventEl.className = 'event-item';
+                    eventEl.innerHTML = `
+                        <button class="delete-btn" onclick="agenda.deleteEvent(${event.id})">×</button>
+                        <div class="event-time">${event.time}</div>
+                        <div class="event-title">${event.title}</div>
+                        <div class="event-description">${event.description}</div>
+                    `;
+                    container.appendChild(eventEl);
+                });
+            }
+
+            renderTasks() {
+                const activeTasks = this.tasks.filter(task => !task.completed)
+                    .sort((a, b) => {
+                        const priorityOrder = { high: 3, medium: 2, low: 1 };
+                        return priorityOrder[b.priority] - priorityOrder[a.priority];
+                    });
+
+                const container = document.getElementById('tasksList');
+                container.innerHTML = '';
+
+                if (activeTasks.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: #718096;">Todas as tarefas concluídas! 🎉</p>';
+                    return;
+                }
+
+                activeTasks.forEach(task => {
+                    const taskEl = document.createElement('div');
+                    taskEl.className = `task-item priority-${task.priority}`;
+                    
+                    const dueDate = task.due ? new Date(task.due).toLocaleDateString('pt-BR') : 'Sem prazo';
+                    const isOverdue = task.due && new Date(task.due) < new Date() ? '⚠️' : '';
+                    
+                    taskEl.innerHTML = `
+                        <button class="delete-btn" onclick="agenda.deleteTask(${task.id})">×</button>
+                        <div style="display: flex; align-items: center; margin-bottom: 5px;">
+                            <input type="checkbox" onchange="agenda.toggleTask(${task.id})" style="margin-right: 10px;">
+                            <div style="flex: 1;">
+                                <div class="event-title">${task.title} ${isOverdue}</div>
+                                <div class="event-description">
+                                    📊 ${task.priority.toUpperCase()} | 📁 ${task.category} | 📅 ${dueDate}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(taskEl);
+                });
+            }
+
+            generateSmartSuggestions() {
+                this.suggestions = [];
+
+                // Análise de padrões de trabalho
+                const workTasks = this.tasks.filter(t => t.category === 'trabalho' && !t.completed);
+                if (workTasks.length > 3) {
+                    this.suggestions.push('💼 Você tem muitas tarefas de trabalho pendentes. Considere priorizar as mais importantes.');
+                }
+
+                // Lembretes de saúde
+                const healthTasks = this.tasks.filter(t => t.category === 'saude');
+                if (healthTasks.length === 0) {
+                    this.suggestions.push('🏃‍♂️ Que tal adicionar uma tarefa relacionada à sua saúde? Exercícios ou check-up médico?');
+                }
+
+                // Análise de produtividade
+                const completedToday = this.tasks.filter(t => {
+                    if (!t.completedAt) return false;
+                    const today = new Date().toDateString();
+                    return new Date(t.completedAt).toDateString() === today;
+                }).length;
+
+                if (completedToday >= 3) {
+                    this.suggestions.push('🎉 Parabéns! Você está tendo um dia produtivo. Continue assim!');
+                }
+
+                // Sugestões baseadas no horário
+                const currentHour = new Date().getHours();
+                if (currentHour >= 9 && currentHour <= 11) {
+                    this.suggestions.push('☀️ Manhã perfeita para tarefas que exigem mais concentração!');
+                } else if (currentHour >= 14 && currentHour <= 16) {
+                    this.suggestions.push('🌅 Tarde ideal para reuniões e tarefas colaborativas.');
+                }
+
+                // Análise de tarefas vencidas
+                const overdueTasks = this.tasks.filter(t => {
+                    if (!t.due || t.completed) return false;
+                    return new Date(t.due) < new Date();
+                });
+
+                if (overdueTasks.length > 0) {
+                    this.suggestions.push(`⚠️ Você tem ${overdueTasks.length} tarefa(s) em atraso. Considere reorganizar suas prioridades.`);
+                }
+
+                // Sugestões motivacionais
+                const motivationalTips = [
+                    '💡 Dica: Use a técnica Pomodoro para aumentar sua produtividade!',
+                    '🎯 Defina 3 objetivos principais para hoje e foque neles.',
+                    '⏰ Planeje blocos de tempo para tarefas similares.',
+                    '🧘‍♀️ Não esqueça de fazer pausas regulares para manter o foco.'
+                ];
+
+                if (this.suggestions.length < 3) {
+                    const randomTip = motivationalTips[Math.floor(Math.random() * motivationalTips.length)];
+                    this.suggestions.push(randomTip);
+                }
+
+                this.renderSuggestions();
+            }
+
+            renderSuggestions() {
+                const container = document.getElementById('smartSuggestions');
+                container.innerHTML = '';
+
+                this.suggestions.forEach(suggestion => {
+                    const suggestionEl = document.createElement('div');
+                    suggestionEl.className = 'suggestion-item';
+                    suggestionEl.textContent = suggestion;
+                    container.appendChild(suggestionEl);
+                });
+            }
+
+            updateStats() {
+                const today = new Date().toISOString().split('T')[0];
+                const todayEvents = this.events.filter(e => e.date === today).length;
+                const pendingTasks = this.tasks.filter(t => !t.completed).length;
+                const completedTasks = this.tasks.filter(t => t.completed).length;
+
+                document.getElementById('totalEvents').textContent = todayEvents;
+                document.getElementById('totalTasks').textContent = pendingTasks;
+                document.getElementById('completedTasks').textContent = completedTasks;
+
+                // Atualizar barra de produtividade
+                const totalTasks = pendingTasks + completedTasks;
+                const productivity = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+                document.getElementById('productivityBar').style.width = `${productivity}%`;
+            }
+
+            toggleTask(taskId) {
+                const task = this.tasks.find(t => t.id === taskId);
+                if (task) {
+                    task.completed = !task.completed;
+                    task.completedAt = task.completed ? new Date() : null;
+                    this.saveTasks();
+                    this.renderTasks();
+                    this.updateStats();
+                    this.generateSmartSuggestions();
+                    this.showNotification(task.completed ? 'Tarefa concluída! 🎉' : 'Tarefa reativada');
+                }
+            }
+
+            deleteEvent(eventId) {
+                this.events = this.events.filter(e => e.id !== eventId);
+                this.saveEvents();
+                this.renderEvents();
+                this.updateStats();
+                this.showNotification('Evento excluído');
+            }
+
+            deleteTask(taskId) {
+                this.tasks = this.tasks.filter(t => t.id !== taskId);
+                this.saveTasks();
+                this.renderTasks();
+                this.updateStats();
+                this.showNotification('Tarefa excluída');
+            }
+
+            startReminderCheck() {
+                setInterval(() => {
+                    const now = new Date();
+                    const currentTime = now.getHours() * 60 + now.getMinutes();
+
+                    this.events.forEach(event => {
+                        const eventDate = new Date(event.date + 'T' + event.time);
+                        const eventTime = eventDate.getHours() * 60 + eventDate.getMinutes();
+                        const reminderTime = eventTime - event.reminder;
+
+                        if (now.toDateString() === eventDate.toDateString() && 
+                            Math.abs(currentTime - reminderTime) <= 1) {
+                            this.showNotification(`🔔 Lembrete: ${event.title} em ${event.reminder} minutos!`);
+                        }
+                    });
+                }, 60000); // Verifica a cada minuto
+            }
+
+            showNotification(message) {
+                const notification = document.getElementById('notification');
+                notification.textContent = message;
+                notification.classList.add('show');
+                
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 3000);
+            }
+
+            saveEvents() {
+                localStorage.setItem('agenda_events', JSON.stringify(this.events));
+            }
+
+            saveTasks() {
+                localStorage.setItem('agenda_tasks', JSON.stringify(this.tasks));
+            }
+        }
+
+        // Inicializar a aplicação
+        const agenda = new SmartAgenda();
+    </script>
+</body>
+</html>
