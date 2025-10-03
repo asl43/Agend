@@ -332,9 +332,9 @@
             border-radius: 5px;
         }
 
-        .warning-box {
-            background: #fff5f5;
-            border-left: 4px solid #e53e3e;
+        .success-box {
+            background: #f0fff4;
+            border-left: 4px solid #48bb78;
             padding: 15px;
             margin: 15px 0;
             border-radius: 5px;
@@ -371,16 +371,16 @@
 
         <div class="config-section">
             <h3>⚙️ Configurações de Notificações</h3>
-            <button class="btn-config" onclick="openConfigModal()">📱 Configurar Email e Telefone</button>
+            <button class="btn-config" onclick="openConfigModal()">📱 Configurar Notificações</button>
             
             <div class="notification-prefs">
                 <div class="checkbox-group">
                     <input type="checkbox" id="emailNotifications" checked>
-                    <label for="emailNotifications">📧 Enviar Lembretes por Email</label>
+                    <label for="emailNotifications">📧 Lembretes por Email</label>
                 </div>
                 <div class="checkbox-group">
-                    <input type="checkbox" id="smsNotifications" checked>
-                    <label for="smsNotifications">📱 Enviar Lembretes por SMS</label>
+                    <input type="checkbox" id="whatsappNotifications" checked>
+                    <label for="whatsappNotifications">📱 Lembretes por WhatsApp</label>
                 </div>
             </div>
         </div>
@@ -501,73 +501,37 @@
         </div>
     </div>
 
-    <!-- Modal de Configuração -->
     <div id="configModal" class="modal">
         <div class="modal-content">
             <span class="close-modal" onclick="closeConfigModal()">&times;</span>
-            <h2>⚙️ Configurações de Notificações</h2>
+            <h2>⚙️ Configurações</h2>
             
-            <div class="info-box">
-                <strong>📋 Como funciona:</strong>
-                <p style="margin-top: 10px;">Configure seu email e telefone para receber lembretes automáticos sobre seus eventos e tarefas. O sistema enviará mensagens nos horários programados com todos os detalhes.</p>
+            <div class="success-box">
+                <strong>✅ Sistema Pré-Configurado!</strong>
+                <p style="margin-top: 10px;">Suas notificações já estão configuradas e prontas para uso. Os lembretes serão enviados automaticamente.</p>
             </div>
 
-            <h3 style="margin-top: 20px;">📧 Email para Notificações</h3>
-            <div class="form-group">
-                <label for="userEmail">Seu Email:</label>
-                <input type="email" id="userEmail" placeholder="seu@email.com">
+            <h3 style="margin-top: 20px;">📧 Notificações por Email</h3>
+            <div class="info-box">
+                Email configurado: <strong>usocomercial46@gmail.com</strong>
             </div>
             
-            <h3 style="margin-top: 20px;">📱 Telefone para SMS/WhatsApp</h3>
-            <div class="form-group">
-                <label for="userPhone">Seu Telefone (com código do país):</label>
-                <input type="tel" id="userPhone" placeholder="+55 92 99999-9999">
+            <h3 style="margin-top: 20px;">📱 Notificações por WhatsApp</h3>
+            <div class="info-box">
+                Telefone configurado: <strong>+55 92 93216959</strong>
             </div>
 
-            <h3 style="margin-top: 20px;">🔗 Google Sheets (Opcional)</h3>
+            <h3 style="margin-top: 20px;">💾 Backup Google Sheets</h3>
             <div class="info-box">
-                <strong>💡 Dica:</strong> Configure o Google Sheets para backup automático dos seus dados.
-            </div>
-            <div class="form-group">
-                <label for="sheetsUrl">URL do Google Apps Script:</label>
-                <input type="url" id="sheetsUrl" placeholder="https://script.google.com/macros/s/...">
+                Status: <strong>Conectado</strong><br>
+                Todos os eventos e tarefas são salvos automaticamente.
             </div>
             
-            <button onclick="saveConfig()" style="margin-top: 20px;">💾 Salvar Configurações</button>
-            
-            <div class="warning-box" style="margin-top: 20px;">
-                <strong>📋 Código para Google Apps Script:</strong>
-                <pre style="background: #f7fafc; padding: 10px; border-radius: 5px; overflow-x: auto; font-size: 0.75em; margin-top: 10px;">
-function doPost(e) {
-  var data = JSON.parse(e.postData.contents);
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  
-  // Salvar no Google Sheets
-  if (data.type === 'event') {
-    var sheet = ss.getSheetByName('Eventos') || ss.insertSheet('Eventos');
-    sheet.appendRow([data.id, data.title, data.date, data.time, data.description]);
-  } else if (data.type === 'task') {
-    var sheet = ss.getSheetByName('Tarefas') || ss.insertSheet('Tarefas');
-    sheet.appendRow([data.id, data.title, data.description, data.priority, data.due]);
-  }
-  
-  // Enviar email de lembrete
-  if (data.sendEmail && data.userEmail) {
-    MailApp.sendEmail({
-      to: data.userEmail,
-      subject: '🔔 ' + data.title,
-      body: data.message
-    });
-  }
-  
-  return ContentService.createTextOutput(JSON.stringify({success: true}))
-    .setMimeType(ContentService.MimeType.JSON);
-}</pre>
-            </div>
+            <button onclick="testNotifications()" style="margin-top: 20px; background: linear-gradient(135deg, #48bb78, #38a169);">🔔 Testar Notificações</button>
+            <button onclick="closeConfigModal()" style="margin-top: 10px; background: linear-gradient(135deg, #718096, #4a5568);">Fechar</button>
         </div>
     </div>
 
-    <!-- Status de Sincronização -->
     <div class="sync-status">
         <div class="sync-indicator" id="syncIndicator"></div>
         <span id="syncText">Sistema Pronto</span>
@@ -580,8 +544,14 @@ function doPost(e) {
             constructor() {
                 this.events = [];
                 this.tasks = [];
-                this.config = this.loadConfig();
-                this.notificationQueue = [];
+                this.config = {
+                    sheetsUrl: 'https://script.google.com/macros/s/AKfycbwGqVv9d3BsmWbt6ghjsJiXY-H4RF4-rZYDqYAhI9Z2G9MwpkiIBFT8q2sdqsGMkDpA/exec',
+                    userEmail: 'usocomercial46@gmail.com',
+                    userPhone: '559293216959',
+                    whatsappApiKey: '4914162',
+                    emailNotifications: true,
+                    whatsappNotifications: true
+                };
                 this.init();
             }
 
@@ -593,104 +563,85 @@ function doPost(e) {
                 this.renderTasks();
                 this.updateStats();
                 this.startReminderCheck();
-                this.startTaskReminderCheck();
                 setInterval(() => this.updateDateTime(), 1000);
             }
 
-            loadConfig() {
-                const saved = window.localStorage.getItem('agenda_config');
-                return saved ? JSON.parse(saved) : {
-                    sheetsUrl: '',
-                    userEmail: '',
-                    userPhone: '',
-                    emailNotifications: true,
-                    smsNotifications: true
-                };
-            }
-
-            saveConfigData() {
-                this.config = {
-                    sheetsUrl: document.getElementById('sheetsUrl').value,
-                    userEmail: document.getElementById('userEmail').value,
-                    userPhone: document.getElementById('userPhone').value,
-                    emailNotifications: document.getElementById('emailNotifications').checked,
-                    smsNotifications: document.getElementById('smsNotifications').checked
-                };
-                window.localStorage.setItem('agenda_config', JSON.stringify(this.config));
-                this.showNotification('✅ Configurações salvas! Você receberá lembretes no email e telefone configurados.');
-                closeConfigModal();
-            }
-
             loadFromMemory() {
-                const savedEvents = window.localStorage.getItem('agenda_events');
-                const savedTasks = window.localStorage.getItem('agenda_tasks');
+                const savedEvents = localStorage.getItem('agenda_events');
+                const savedTasks = localStorage.getItem('agenda_tasks');
                 
                 if (savedEvents) this.events = JSON.parse(savedEvents);
                 if (savedTasks) this.tasks = JSON.parse(savedTasks);
             }
 
             saveToMemory() {
-                window.localStorage.setItem('agenda_events', JSON.stringify(this.events));
-                window.localStorage.setItem('agenda_tasks', JSON.stringify(this.tasks));
+                localStorage.setItem('agenda_events', JSON.stringify(this.events));
+                localStorage.setItem('agenda_tasks', JSON.stringify(this.tasks));
             }
 
             async sendToSheets(data, type) {
-                if (!this.config.sheetsUrl) return;
-
                 try {
+                    const payload = { ...data, type: type };
                     await fetch(this.config.sheetsUrl, {
                         method: 'POST',
                         mode: 'no-cors',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ ...data, type: type })
+                        body: JSON.stringify(payload)
                     });
+                    console.log('Dados salvos no Google Sheets');
                 } catch (error) {
                     console.error('Erro ao salvar no Google Sheets:', error);
                 }
             }
 
-            async sendReminder(title, description, type, dateTime = '') {
-                const message = this.formatReminderMessage(title, description, type, dateTime);
+            async sendEmailReminder(title, message) {
+                if (!this.config.emailNotifications) return;
                 
-                // Mostrar notificação no navegador
-                this.showNotification(message);
-
-                // Enviar por email se configurado
-                if (this.config.emailNotifications && this.config.userEmail && this.config.sheetsUrl) {
-                    try {
-                        await fetch(this.config.sheetsUrl, {
-                            method: 'POST',
-                            mode: 'no-cors',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                type: 'reminder',
-                                title: title,
-                                message: message,
-                                userEmail: this.config.userEmail,
-                                sendEmail: true
-                            })
-                        });
-                        console.log('Email de lembrete enviado!');
-                    } catch (error) {
-                        console.error('Erro ao enviar email:', error);
-                    }
-                }
-
-                // SMS/WhatsApp seria enviado aqui (requer integração com Twilio ou similar)
-                if (this.config.smsNotifications && this.config.userPhone) {
-                    console.log('SMS enviado para:', this.config.userPhone, message);
+                try {
+                    await fetch(this.config.sheetsUrl, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            type: 'reminder',
+                            title: title,
+                            message: message,
+                            userEmail: this.config.userEmail,
+                            sendEmail: true
+                        })
+                    });
+                    console.log('Email de lembrete enviado!');
+                } catch (error) {
+                    console.error('Erro ao enviar email:', error);
                 }
             }
 
-            formatReminderMessage(title, description, type, dateTime) {
-                let icon = type === 'event' ? '📅' : '✅';
-                let typeText = type === 'event' ? 'Evento' : 'Tarefa';
+            async sendWhatsAppReminder(message) {
+                if (!this.config.whatsappNotifications) return;
                 
-                let message = `${icon} ${typeText}: ${title}\n`;
-                if (dateTime) message += `🕐 ${dateTime}\n`;
-                if (description) message += `📝 ${description}`;
+                try {
+                    const encodedMessage = encodeURIComponent(message);
+                    const url = `https://api.callmebot.com/whatsapp.php?phone=${this.config.userPhone}&text=${encodedMessage}&apikey=${this.config.whatsappApiKey}`;
+                    
+                    await fetch(url, { mode: 'no-cors' });
+                    console.log('WhatsApp enviado!');
+                } catch (error) {
+                    console.error('Erro ao enviar WhatsApp:', error);
+                }
+            }
+
+            async sendReminder(title, description, type, dateTime = '') {
+                const icon = type === 'event' ? '📅' : '✅';
+                const typeText = type === 'event' ? 'Evento' : 'Tarefa';
                 
-                return message;
+                let message = `${icon} ${typeText}: ${title}`;
+                if (dateTime) message += `\n🕐 ${dateTime}`;
+                if (description) message += `\n📝 ${description}`;
+                
+                this.showNotification(message);
+                
+                await this.sendEmailReminder(title, message);
+                await this.sendWhatsAppReminder(message);
             }
 
             updateDateTime() {
@@ -718,15 +669,11 @@ function doPost(e) {
                     this.addTask();
                 });
 
-                ['emailNotifications', 'smsNotifications'].forEach(id => {
-                    document.getElementById(id).addEventListener('change', () => {
-                        this.config[id] = document.getElementById(id).checked;
-                        window.localStorage.setItem('agenda_config', JSON.stringify(this.config));
+                ['emailNotifications', 'whatsappNotifications'].forEach(id => {
+                    document.getElementById(id).addEventListener('change', (e) => {
+                        this.config[id] = e.target.checked;
                     });
                 });
-
-                document.getElementById('emailNotifications').checked = this.config.emailNotifications;
-                document.getElementById('smsNotifications').checked = this.config.smsNotifications;
             }
 
             async addEvent() {
@@ -748,16 +695,13 @@ function doPost(e) {
 
                 this.events.push(event);
                 this.saveToMemory();
-                
-                // Salvar no Google Sheets
                 await this.sendToSheets(event, 'event');
                 
                 this.renderEvents();
                 this.updateStats();
                 document.getElementById('eventForm').reset();
                 
-                const dateTimeText = `${new Date(date).toLocaleDateString('pt-BR')} às ${time}`;
-                this.showNotification(`✅ Evento "${title}" adicionado! Você receberá um lembrete ${event.reminder} minutos antes.`);
+                this.showNotification(`✅ Evento "${title}" adicionado! Você receberá lembretes.`);
             }
 
             async addTask() {
@@ -772,21 +716,18 @@ function doPost(e) {
                     due: document.getElementById('taskDue').value,
                     category: document.getElementById('taskCategory').value,
                     completed: false,
-                    createdAt: new Date().toISOString(),
-                    notifiedToday: false
+                    createdAt: new Date().toISOString()
                 };
 
                 this.tasks.push(task);
                 this.saveToMemory();
-                
-                // Salvar no Google Sheets
                 await this.sendToSheets(task, 'task');
                 
                 this.renderTasks();
                 this.updateStats();
                 document.getElementById('taskForm').reset();
                 
-                this.showNotification(`✅ Tarefa "${title}" adicionada! Você receberá lembretes diários até concluí-la.`);
+                this.showNotification(`✅ Tarefa "${title}" adicionada!`);
             }
 
             renderEvents() {
@@ -862,12 +803,7 @@ function doPost(e) {
                 const workTasks = this.tasks.filter(t => t.category === 'trabalho' && !t.completed);
                 
                 if (workTasks.length > 3) {
-                    suggestions.push('💼 Você tem muitas tarefas de trabalho pendentes. Considere priorizar as mais importantes.');
-                }
-
-                const healthTasks = this.tasks.filter(t => t.category === 'saude');
-                if (healthTasks.length === 0) {
-                    suggestions.push('🏃‍♂️ Que tal adicionar uma tarefa relacionada à sua saúde?');
+                    suggestions.push('💼 Você tem muitas tarefas de trabalho pendentes. Priorize as mais importantes.');
                 }
 
                 const overdueTasks = this.tasks.filter(t => {
@@ -879,7 +815,7 @@ function doPost(e) {
                     suggestions.push(`⚠️ Você tem ${overdueTasks.length} tarefa(s) em atraso.`);
                 }
 
-                const motivationalTips = [
+                const tips = [
                     '💡 Use a técnica Pomodoro: 25 min de foco + 5 min de pausa!',
                     '🎯 Defina 3 objetivos principais para hoje.',
                     '⏰ Agrupe tarefas similares para melhor eficiência.',
@@ -888,7 +824,7 @@ function doPost(e) {
                 ];
 
                 if (suggestions.length < 2) {
-                    const randomTip = motivationalTips[Math.floor(Math.random() * motivationalTips.length)];
+                    const randomTip = tips[Math.floor(Math.random() * tips.length)];
                     suggestions.push(randomTip);
                 }
 
@@ -928,10 +864,7 @@ function doPost(e) {
                     task.completed = !task.completed;
                     task.completedAt = task.completed ? new Date().toISOString() : null;
                     this.saveToMemory();
-                    
-                    if (this.config.sheetsUrl) {
-                        await this.sendToSheets(task, 'task');
-                    }
+                    await this.sendToSheets(task, 'task');
                     
                     this.renderTasks();
                     this.updateStats();
@@ -943,8 +876,6 @@ function doPost(e) {
                             `Parabéns! Você concluiu: ${task.description || task.title}`,
                             'task'
                         );
-                    } else {
-                        this.showNotification('Tarefa reativada');
                     }
                 }
             }
@@ -972,7 +903,6 @@ function doPost(e) {
             }
 
             startReminderCheck() {
-                // Verificar lembretes de eventos a cada minuto
                 setInterval(() => {
                     const now = new Date();
                     const currentTime = now.getHours() * 60 + now.getMinutes();
@@ -984,92 +914,22 @@ function doPost(e) {
                         const eventTime = eventDate.getHours() * 60 + eventDate.getMinutes();
                         const reminderTime = eventTime - event.reminder;
 
-                        // Se está no dia do evento e chegou a hora do lembrete
                         if (now.toDateString() === eventDate.toDateString() && 
                             currentTime === reminderTime) {
                             
                             const dateTimeText = `${new Date(event.date).toLocaleDateString('pt-BR')} às ${event.time}`;
-                            const message = this.formatReminderMessage(
-                                event.title,
-                                event.description,
-                                'event',
-                                dateTimeText
-                            );
                             
                             event.notified = true;
                             this.saveToMemory();
                             
                             await this.sendReminder(
-                                `Lembrete: ${event.title}`,
+                                event.title,
                                 event.description,
                                 'event',
                                 dateTimeText
                             );
                         }
                     });
-                }, 60000); // Verifica a cada 1 minuto
-            }
-
-            startTaskReminderCheck() {
-                // Enviar lembrete de tarefas pendentes todos os dias às 9h
-                setInterval(() => {
-                    const now = new Date();
-                    const currentHour = now.getHours();
-                    const currentMinute = now.getMinutes();
-
-                    // Se for 9h da manhã
-                    if (currentHour === 9 && currentMinute === 0) {
-                        const pendingTasks = this.tasks.filter(t => !t.completed && !t.notifiedToday);
-                        
-                        if (pendingTasks.length > 0) {
-                            pendingTasks.forEach(async task => {
-                                const dueText = task.due ? 
-                                    `Prazo: ${new Date(task.due).toLocaleDateString('pt-BR')}` : 
-                                    'Sem prazo definido';
-                                
-                                await this.sendReminder(
-                                    `Lembrete de Tarefa: ${task.title}`,
-                                    `${task.description}\n${dueText}\nPrioridade: ${task.priority.toUpperCase()}`,
-                                    'task'
-                                );
-                                
-                                task.notifiedToday = true;
-                            });
-                            
-                            this.saveToMemory();
-                        }
-                    }
-
-                    // Resetar flag de notificação à meia-noite
-                    if (currentHour === 0 && currentMinute === 0) {
-                        this.tasks.forEach(task => {
-                            task.notifiedToday = false;
-                        });
-                        this.saveToMemory();
-                    }
-                }, 60000); // Verifica a cada 1 minuto
-
-                // Lembrete de tarefas com prazo vencendo hoje
-                setInterval(() => {
-                    const now = new Date();
-                    const today = now.toISOString().split('T')[0];
-                    const currentHour = now.getHours();
-
-                    // Às 9h, verificar tarefas que vencem hoje
-                    if (currentHour === 9 && now.getMinutes() === 0) {
-                        const tasksDueToday = this.tasks.filter(t => 
-                            !t.completed && t.due === today
-                        );
-
-                        tasksDueToday.forEach(async task => {
-                            await this.sendReminder(
-                                `⚠️ Tarefa Vence Hoje: ${task.title}`,
-                                `${task.description}\nEsta tarefa vence hoje! Não se esqueça de concluí-la.`,
-                                'task',
-                                'Vence hoje'
-                            );
-                        });
-                    }
                 }, 60000);
             }
 
@@ -1087,40 +947,29 @@ function doPost(e) {
                     notification.classList.remove('error');
                 }, 4000);
             }
-
-            updateSyncStatus(status, text) {
-                const indicator = document.getElementById('syncIndicator');
-                const statusText = document.getElementById('syncText');
-                
-                indicator.className = 'sync-indicator';
-                if (status === 'syncing') {
-                    indicator.classList.add('syncing');
-                } else if (status === 'error') {
-                    indicator.classList.add('error');
-                }
-                
-                statusText.textContent = text;
-            }
         }
 
         const agenda = new SmartAgenda();
 
         function openConfigModal() {
-            const modal = document.getElementById('configModal');
-            modal.classList.add('show');
-            
-            document.getElementById('sheetsUrl').value = agenda.config.sheetsUrl || '';
-            document.getElementById('userEmail').value = agenda.config.userEmail || '';
-            document.getElementById('userPhone').value = agenda.config.userPhone || '';
+            document.getElementById('configModal').classList.add('show');
         }
 
         function closeConfigModal() {
-            const modal = document.getElementById('configModal');
-            modal.classList.remove('show');
+            document.getElementById('configModal').classList.remove('show');
         }
 
-        function saveConfig() {
-            agenda.saveConfigData();
+        async function testNotifications() {
+            agenda.showNotification('🔔 Testando notificações...');
+            
+            const testMessage = '🔔 Teste de Notificação da Agenda Inteligente!\n✅ Se você recebeu esta mensagem, suas notificações estão funcionando perfeitamente!';
+            
+            await agenda.sendEmailReminder('Teste de Notificação', testMessage);
+            await agenda.sendWhatsAppReminder(testMessage);
+            
+            setTimeout(() => {
+                agenda.showNotification('✅ Teste enviado! Verifique seu email e WhatsApp.');
+            }, 2000);
         }
 
         window.onclick = function(event) {
