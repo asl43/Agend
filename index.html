@@ -507,28 +507,93 @@
             <h2>⚙️ Configurações</h2>
             
             <div class="success-box">
-                <strong>✅ Sistema Pré-Configurado!</strong>
-                <p style="margin-top: 10px;">Suas notificações já estão configuradas e prontas para uso. Os lembretes serão enviados automaticamente.</p>
+                <strong>✅ Sistema Configurado!</strong>
+                <p style="margin-top: 10px;">Suas credenciais estão salvas. Use o botão "Testar Notificações" para verificar se tudo funciona.</p>
             </div>
 
-            <h3 style="margin-top: 20px;">📧 Notificações por Email</h3>
+            <h3 style="margin-top: 20px;">📧 Email Configurado</h3>
             <div class="info-box">
-                Email configurado: <strong>usocomercial46@gmail.com</strong>
+                <strong>usocomercial46@gmail.com</strong>
             </div>
             
-            <h3 style="margin-top: 20px;">📱 Notificações por WhatsApp</h3>
+            <h3 style="margin-top: 20px;">📱 WhatsApp Configurado</h3>
             <div class="info-box">
-                Telefone configurado: <strong>+55 92 93216959</strong>
+                Telefone: <strong>+55 92 93216959</strong><br>
+                API Key: <strong>4914162</strong>
             </div>
 
-            <h3 style="margin-top: 20px;">💾 Backup Google Sheets</h3>
+            <h3 style="margin-top: 20px;">💾 Google Sheets</h3>
             <div class="info-box">
                 Status: <strong>Conectado</strong><br>
-                Todos os eventos e tarefas são salvos automaticamente.
+                URL: <strong>...exec</strong> (configurada)
+            </div>
+
+            <div class="form-group" style="margin-top: 20px;">
+                <label>
+                    <input type="checkbox" id="emailNotifModal" checked style="width: auto; margin-right: 10px;">
+                    Receber lembretes por Email
+                </label>
+            </div>
+
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="whatsappNotifModal" checked style="width: auto; margin-right: 10px;">
+                    Receber lembretes por WhatsApp
+                </label>
             </div>
             
-            <button onclick="testNotifications()" style="margin-top: 20px; background: linear-gradient(135deg, #48bb78, #38a169);">🔔 Testar Notificações</button>
+            <button onclick="saveUserPreferences()" style="margin-top: 20px;">💾 Salvar Preferências</button>
+            <button onclick="testNotifications()" style="margin-top: 10px; background: linear-gradient(135deg, #48bb78, #38a169);">🔔 Testar Notificações Agora</button>
             <button onclick="closeConfigModal()" style="margin-top: 10px; background: linear-gradient(135deg, #718096, #4a5568);">Fechar</button>
+            
+            <div style="margin-top: 30px; padding: 15px; background: #f7fafc; border-radius: 8px;">
+                <strong>📝 Código para Google Apps Script:</strong>
+                <pre style="background: white; padding: 15px; border-radius: 5px; overflow-x: auto; font-size: 0.8em; margin-top: 10px; border: 1px solid #e2e8f0;">
+function doPost(e) {
+  try {
+    var data = JSON.parse(e.postData.contents);
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    
+    // Salvar eventos
+    if (data.type === 'event') {
+      var sheet = ss.getSheetByName('Eventos') || ss.insertSheet('Eventos');
+      if (sheet.getLastRow() === 0) {
+        sheet.appendRow(['ID', 'Título', 'Data', 'Hora', 'Descrição', 'Criado em']);
+      }
+      sheet.appendRow([data.id, data.title, data.date, data.time, data.description, data.createdAt]);
+    }
+    
+    // Salvar tarefas
+    if (data.type === 'task') {
+      var sheet = ss.getSheetByName('Tarefas') || ss.insertSheet('Tarefas');
+      if (sheet.getLastRow() === 0) {
+        sheet.appendRow(['ID', 'Título', 'Descrição', 'Prioridade', 'Data Limite', 'Categoria', 'Concluída']);
+      }
+      sheet.appendRow([data.id, data.title, data.description, data.priority, data.due, data.category, data.completed]);
+    }
+    
+    // Enviar email de lembrete
+    if (data.type === 'reminder' && data.sendEmail && data.userEmail) {
+      MailApp.sendEmail({
+        to: data.userEmail,
+        subject: '🔔 Lembrete: ' + data.title,
+        body: data.message
+      });
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify({success: true, message: 'OK'}))
+      .setMimeType(ContentService.MimeType.JSON);
+      
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({success: false, error: error.toString()}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function doGet() {
+  return ContentService.createTextOutput('Sistema funcionando!');
+}</pre>
+            </div>
         </div>
     </div>
 
@@ -544,14 +609,7 @@
             constructor() {
                 this.events = [];
                 this.tasks = [];
-                this.config = {
-                    sheetsUrl: 'https://script.google.com/macros/s/AKfycbwGqVv9d3BsmWbt6ghjsJiXY-H4RF4-rZYDqYAhI9Z2G9MwpkiIBFT8q2sdqsGMkDpA/exec',
-                    userEmail: 'usocomercial46@gmail.com',
-                    userPhone: '559293216959',
-                    whatsappApiKey: '4914162',
-                    emailNotifications: true,
-                    whatsappNotifications: true
-                };
+                this.config = this.loadConfig();
                 this.init();
             }
 
@@ -564,6 +622,22 @@
                 this.updateStats();
                 this.startReminderCheck();
                 setInterval(() => this.updateDateTime(), 1000);
+            }
+
+            loadConfig() {
+                const saved = localStorage.getItem('agenda_config');
+                return saved ? JSON.parse(saved) : {
+                    sheetsUrl: 'https://script.google.com/macros/s/AKfycbwGqVv9d3BsmWbt6ghjsJiXY-H4RF4-rZYDqYAhI9Z2G9MwpkiIBFT8q2sdqsGMkDpA/exec',
+                    userEmail: 'usocomercial46@gmail.com',
+                    userPhone: '559293216959',
+                    whatsappApiKey: '4914162',
+                    emailNotifications: true,
+                    whatsappNotifications: true
+                };
+            }
+
+            saveConfig() {
+                localStorage.setItem('agenda_config', JSON.stringify(this.config));
             }
 
             loadFromMemory() {
@@ -580,27 +654,37 @@
             }
 
             async sendToSheets(data, type) {
+                if (!this.config.sheetsUrl) {
+                    console.log('Google Sheets URL não configurada');
+                    return;
+                }
+
                 try {
                     const payload = { ...data, type: type };
-                    await fetch(this.config.sheetsUrl, {
+                    const response = await fetch(this.config.sheetsUrl, {
                         method: 'POST',
-                        mode: 'no-cors',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
+                        body: JSON.stringify(payload),
+                        redirect: 'follow'
                     });
-                    console.log('Dados salvos no Google Sheets');
+                    
+                    console.log('✅ Salvo no Google Sheets');
+                    this.updateSyncStatus('success', 'Sincronizado');
                 } catch (error) {
-                    console.error('Erro ao salvar no Google Sheets:', error);
+                    console.error('❌ Erro ao salvar no Google Sheets:', error);
+                    this.updateSyncStatus('error', 'Erro ao sincronizar');
                 }
             }
 
             async sendEmailReminder(title, message) {
-                if (!this.config.emailNotifications) return;
+                if (!this.config.emailNotifications || !this.config.sheetsUrl) {
+                    console.log('Email não configurado');
+                    return;
+                }
                 
                 try {
-                    await fetch(this.config.sheetsUrl, {
+                    const response = await fetch(this.config.sheetsUrl, {
                         method: 'POST',
-                        mode: 'no-cors',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             type: 'reminder',
@@ -608,25 +692,39 @@
                             message: message,
                             userEmail: this.config.userEmail,
                             sendEmail: true
-                        })
+                        }),
+                        redirect: 'follow'
                     });
-                    console.log('Email de lembrete enviado!');
+                    
+                    console.log('📧 Email enviado com sucesso!');
+                    this.showNotification('📧 Email enviado!');
                 } catch (error) {
-                    console.error('Erro ao enviar email:', error);
+                    console.error('❌ Erro ao enviar email:', error);
+                    this.showNotification('❌ Erro ao enviar email', 'error');
                 }
             }
 
             async sendWhatsAppReminder(message) {
-                if (!this.config.whatsappNotifications) return;
+                if (!this.config.whatsappNotifications || !this.config.whatsappApiKey) {
+                    console.log('WhatsApp não configurado');
+                    return;
+                }
                 
                 try {
                     const encodedMessage = encodeURIComponent(message);
                     const url = `https://api.callmebot.com/whatsapp.php?phone=${this.config.userPhone}&text=${encodedMessage}&apikey=${this.config.whatsappApiKey}`;
                     
-                    await fetch(url, { mode: 'no-cors' });
-                    console.log('WhatsApp enviado!');
+                    const response = await fetch(url);
+                    
+                    if (response.ok) {
+                        console.log('📱 WhatsApp enviado com sucesso!');
+                        this.showNotification('📱 WhatsApp enviado!');
+                    } else {
+                        throw new Error('Erro na API do CallMeBot');
+                    }
                 } catch (error) {
-                    console.error('Erro ao enviar WhatsApp:', error);
+                    console.error('❌ Erro ao enviar WhatsApp:', error);
+                    this.showNotification('❌ Erro ao enviar WhatsApp. Verifique se ativou o CallMeBot.', 'error');
                 }
             }
 
@@ -945,7 +1043,26 @@
                 setTimeout(() => {
                     notification.classList.remove('show');
                     notification.classList.remove('error');
-                }, 4000);
+                }, 5000);
+            }
+
+            updateSyncStatus(status, text) {
+                const indicator = document.getElementById('syncIndicator');
+                const statusText = document.getElementById('syncText');
+                
+                indicator.className = 'sync-indicator';
+                if (status === 'syncing') {
+                    indicator.classList.add('syncing');
+                } else if (status === 'error') {
+                    indicator.classList.add('error');
+                }
+                
+                statusText.textContent = text;
+                
+                setTimeout(() => {
+                    indicator.className = 'sync-indicator';
+                    statusText.textContent = 'Sistema Pronto';
+                }, 3000);
             }
         }
 
@@ -953,23 +1070,40 @@
 
         function openConfigModal() {
             document.getElementById('configModal').classList.add('show');
+            document.getElementById('emailNotifModal').checked = agenda.config.emailNotifications;
+            document.getElementById('whatsappNotifModal').checked = agenda.config.whatsappNotifications;
         }
 
         function closeConfigModal() {
             document.getElementById('configModal').classList.remove('show');
         }
 
+        function saveUserPreferences() {
+            agenda.config.emailNotifications = document.getElementById('emailNotifModal').checked;
+            agenda.config.whatsappNotifications = document.getElementById('whatsappNotifModal').checked;
+            agenda.saveConfig();
+            
+            agenda.showNotification('✅ Preferências salvas!');
+        }
+
         async function testNotifications() {
-            agenda.showNotification('🔔 Testando notificações...');
+            agenda.showNotification('🔔 Enviando testes...');
+            agenda.updateSyncStatus('syncing', 'Testando...');
             
-            const testMessage = '🔔 Teste de Notificação da Agenda Inteligente!\n✅ Se você recebeu esta mensagem, suas notificações estão funcionando perfeitamente!';
+            const testMessage = '🔔 TESTE DA AGENDA INTELIGENTE!\n\n✅ Se você recebeu esta mensagem, suas notificações estão funcionando perfeitamente!\n\n📅 Agora você receberá lembretes automáticos de todos os seus eventos e tarefas.';
             
-            await agenda.sendEmailReminder('Teste de Notificação', testMessage);
-            await agenda.sendWhatsAppReminder(testMessage);
-            
-            setTimeout(() => {
-                agenda.showNotification('✅ Teste enviado! Verifique seu email e WhatsApp.');
-            }, 2000);
+            try {
+                await agenda.sendEmailReminder('Teste de Notificação - Agenda Inteligente', testMessage);
+                await agenda.sendWhatsAppReminder(testMessage);
+                
+                setTimeout(() => {
+                    agenda.showNotification('✅ Testes enviados! Verifique seu email e WhatsApp em 5-10 segundos.');
+                    agenda.updateSyncStatus('success', 'Teste concluído');
+                }, 2000);
+            } catch (error) {
+                agenda.showNotification('❌ Erro ao enviar testes. Verifique o console.', 'error');
+                agenda.updateSyncStatus('error', 'Erro no teste');
+            }
         }
 
         window.onclick = function(event) {
